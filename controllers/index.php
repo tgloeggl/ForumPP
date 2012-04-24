@@ -415,9 +415,21 @@ class IndexController extends StudipController
             $content  = htmlReady(quotes_encode(ForumPPEntry::killEdit($entry['content']), $entry['author']));
             $content .= "\n\n";
 
+            // Adjust title of reply
+            $title  = _('Re:') . ' ' . $entry['name'];
+            $needle = substr(_('Re:'), 0, -1);                         # Exclude colon
+            $regexp = sprintf('/^%1$s: %1$s(?:\^(\d+))?: /', $needle); # "Re: Re[^x]: foo"
+            if (preg_match($regexp, $title, $match)) {
+                $title = sprintf('%s^%d: %s',
+                                 $needle,
+                                 ($match[1] ?: 1) + 1,
+                                 substr($title, strlen($match[0]))     # strip malformed
+                         );
+            }
+
             $this->flash['new_entry'] = true;
             $this->flash['new_entry_content'] = $content;
-            $this->flash['new_entry_title'] = _('Re:') . ' ' . htmlReady($entry['name']);
+            $this->flash['new_entry_title'] = htmlReady($title);
         }
 
         $this->redirect(PluginEngine::getLink('forumpp/index/index/' . $topic_id));
